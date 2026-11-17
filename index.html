@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ZREYA’S Unlimited Tuslob Buwa</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d6336c">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#fff5f9;--card:#fff;--ink:#3a1d2b;--mute:#8a6677;--pink:#d6336c;--soft:#fde0ec;--line:#f3c9da;--ok:#2b9348}
+@media (prefers-color-scheme:dark){:root{--bg:#1d1117;--card:#2a1822;--ink:#fbeaf1;--mute:#c79bb1;--pink:#ff6fa5;--soft:#3d2230;--line:#55303f;--ok:#5ad17a;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:90px}
+.wrap{max-width:560px;margin:0 auto;padding:12px 14px}
+header{text-align:center;padding:18px 8px 10px}
+header h1{margin:0;color:var(--pink);font-size:28px;letter-spacing:1px}
+header h2{margin:2px 0 6px;font-size:16px;letter-spacing:2px}
+header p{margin:0;color:var(--mute);font-size:14px}
+h3{margin:18px 0 6px;color:var(--pink);font-size:15px;letter-spacing:1px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 12px}
+.row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .nm{flex:1}
+.row small{display:block;color:var(--mute)}
+.price{color:var(--pink);font-weight:600;white-space:nowrap}
+button{font:inherit;border:0;border-radius:10px;padding:8px 12px;background:var(--pink);color:#fff;cursor:pointer}
+button.ghost{background:var(--soft);color:var(--pink)}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:34px;height:34px;padding:0;font-size:20px}
+.step b{min-width:22px;text-align:center}
+.note{background:var(--soft);border-radius:12px;padding:10px 12px;margin-top:12px;font-size:14px}
+.bar{position:fixed;left:0;right:0;bottom:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line)}
+.bar>div{max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px}
+input{font:inherit;width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.lbl{font-size:12px;color:var(--mute);margin:8px 0 2px}
+.top{display:flex;justify-content:flex-end}
+.tot{font-size:20px;font-weight:700;text-align:right;padding:12px 0}
+.ok{color:var(--ok)}
+pre{white-space:pre-wrap;background:var(--soft);padding:10px;border-radius:10px;font:14px/1.4 ui-monospace,monospace}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+const S = {
+  brand: "ZREYA’S",
+  sub: "UNLIMITED TUSLOB BUWA",
+  tag: "A Taste of Cebu in Every Bite!",
+  tag2: "FOOD • FLAVOR • LOVE",
+  inclusions: ["Unlimited Buwa", "6 pcs Puso", "Garlic, Onion & Chili"],
+  note: "No outside rice or puso allowed for UNLIMITED BUWA customers.",
+  menu: [
+    { t: "MAIN MENU", i: [
+      { n: "Unlimited Tuslob Buwa", p: 70, m: 3 },
+      { n: "Regular Set", p: 145, m: 1 },
+      { n: "Tuslob Buwa Set (Takeout)", p: 159, m: 1, d: "Inclusions: Utok/Sabaw • 6 pcs Puso • Onion • Garlic" }
+    ]},
+    { t: "ADD-ONS", i: [
+      { n: "Puso", p: 10, m: 1 },
+      { n: "Lumpia", p: 10, m: 1 },
+      { n: "Dynamite", p: 12, m: 1 },
+      { n: "Ngohiong", p: 12, m: 1 },
+      { n: "Siomai", p: 10, m: 1 }
+    ]},
+    { t: "DRINKS", i: [
+      { n: "Coke 1 Liter", p: 55, m: 1 },
+      { n: "Coke Regular", p: 20, m: 1 },
+      { n: "Bottled Water", p: 20, m: 1 }
+    ]}
+  ]
+};
+
+let cust = '', cart = {}, view = 'menu';
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const all = () => S.menu.flatMap(s => s.i);
+const find = n => all().find(x => x.n === n);
+const total = () => Object.entries(cart).reduce((t, [n, q]) => t + (find(n) ? find(n).p * q : 0), 0);
+const count = () => Object.values(cart).reduce((a, b) => a + b, 0);
+
+function inc(s, k) { const it = S.menu[s].i[k]; cart[it.n] = cart[it.n] ? cart[it.n] + 1 : it.m; render(); }
+function dec(s, k) { const it = S.menu[s].i[k]; const q = (cart[it.n] || 0) - 1; if (q < it.m) delete cart[it.n]; else cart[it.n] = q; render(); }
+function rm(n) { delete cart[n]; render(); }
+function go(v) { view = v; render(); window.scrollTo(0, 0); }
+
+function head() {
+  return `<header><h1>${esc(S.brand)}</h1><h2>${esc(S.sub)}</h2><p>${esc(S.tag)}</p><p>${esc(S.tag2)}</p></header>`;
+}
+
+function menuView() {
+  let h = head();
+  S.menu.forEach((s, si) => {
+    h += `<h3>${esc(s.t)}</h3><div class="card">`;
+    s.i.forEach((it, k) => {
+      const q = cart[it.n] || 0;
+      const sub = (it.d || '') + (it.m > 1 ? (it.d ? ' · ' : '') + 'Min. ' + it.m : '');
+      h += `<div class="row"><div class="nm">${esc(it.n)}<small>${esc(sub)}</small></div><span class="price">₱${it.p}</span>` +
+        (q ? `<div class="step"><button onclick="dec(${si},${k})">−</button><b>${q}</b><button onclick="inc(${si},${k})">+</button></div>`
+           : `<button onclick="inc(${si},${k})">Add</button>`) + `</div>`;
+    });
+    h += `</div>`;
+  });
+  h += `<h3>UNLIMITED BUWA INCLUSIONS</h3><div class="card">${S.inclusions.map(x => `<div class="row">• ${esc(x)}</div>`).join('')}</div>`;
+  if (S.note) h += `<div class="note"><b>Important:</b> ${esc(S.note)}</div>`;
+  return h + (count() ? `<div class="bar"><div><b>${count()} items · ₱${total()}</b><button onclick="go('cart')">View order</button></div></div>` : '');
+}
+
+function cartView() {
+  let h = `<div class="top"><button class="ghost" onclick="go('menu')">← Menu</button></div><h3>YOUR ORDER</h3>`;
+  const e = Object.entries(cart);
+  if (!e.length) return h + `<div class="card"><div class="row">Your cart is empty.</div></div>`;
+  h += `<div class="card">` + e.map(([n, q]) =>
+    `<div class="row"><div class="nm">${esc(n)} × ${q}</div><span class="price">₱${find(n).p * q}</span><button class="ghost" onclick="rm(decodeURIComponent('${encodeURIComponent(n)}'))">✕</button></div>`
+  ).join('') + `</div>`;
+  return h + `<div class="tot">TOTAL: ₱${total()}</div><div class="lbl">Your name / table no.</div><input value="${esc(cust)}" oninput="cust=this.value" style="margin-bottom:10px"><button style="width:100%" onclick="go('done')">Confirm order</button>`;
+}
+
+function summary() {
+  return 'Name: ' + (cust || '-') + '\n' +
+    Object.entries(cart).map(([n, q]) => `${n} x ${q} = PHP ${find(n).p * q}`).join('\n') + `\nTOTAL: PHP ${total()}`;
+}
+
+function doneView() {
+  return `<header><h1 class="ok">THANK YOU FOR ORDERING!</h1><h2>WELCOME TO ${esc(S.brand)}</h2></header><pre>${esc(summary())}</pre>
+  <div class="note"><b>Next step:</b> Please take a screenshot of your order and send it to our Facebook page:<br><a href="https://www.facebook.com/share/1F1msLofBE/" target="_blank" rel="noopener" style="color:var(--pink);word-break:break-all">https://www.facebook.com/share/1F1msLofBE/</a></div><br>
+  <button class="ghost" style="width:100%" onclick="cart={};go('menu')">New order</button>`;
+}
+
+function render() {
+  $('app').innerHTML = view === 'cart' ? cartView() : view === 'done' ? doneView() : menuView();
+}
+render();
+
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
+</script>
+</body>
+  </html>
